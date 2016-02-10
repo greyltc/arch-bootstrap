@@ -19,12 +19,14 @@
 #   # chroot destination
 
 set -e -u -o pipefail
+STEP=$2
 
-# Packages needed by pacman (see get-pacman-dependencies.sh)
+# to re-generate this list, under Arch run:
+# bash <(curl -L 'https://raw.githubusercontent.com/greyltc/arch-bootstrap/master/get-pacman-dependencies.sh')
 PACMAN_PACKAGES=(
-  acl archlinux-keyring attr bzip2 curl expat glibc gpgme libarchive
-  libassuan libgpg-error libssh2 lzo openssl pacman pacman-mirrorlist xz zlib
-  krb5 e2fsprogs keyutils libidn gcc-libs
+  acl archlinux-keyring attr bzip2 curl e2fsprogs expat glibc gpgme
+  keyutils krb5 libarchive libassuan libgpg-error libidn libssh2 lzo
+  openssl pacman pacman-mirrorlist xz zlib
 )
 BASIC_PACKAGES=(${PACMAN_PACKAGES[*]} filesystem)
 EXTRA_PACKAGES=(coreutils bash grep gawk file tar systemd sed)
@@ -104,9 +106,6 @@ configure_minimal_system() {
   echo "bootstrap" > "$DEST/etc/hostname"
   
   test -e "$DEST/etc/mtab" || echo "rootfs / rootfs rw 0 0" > "$DEST/etc/mtab"
-  test -e "$DEST/dev/null" || mknod "$DEST/dev/null" c 1 3
-  test -e "$DEST/dev/random" || mknod -m 0644 "$DEST/dev/random" c 1 8
-  test -e "$DEST/dev/urandom" || mknod -m 0644 "$DEST/dev/urandom" c 1 9
   
   sed -i "s/^[[:space:]]*\(CheckSpace\)/# \1/" "$DEST/etc/pacman.conf"
   sed -i "s/^[[:space:]]*SigLevel[[:space:]]*=.*$/SigLevel = Never/" "$DEST/etc/pacman.conf"
@@ -147,6 +146,11 @@ configure_static_qemu() {
 
 install_packages() {
   local ARCH=$1 DEST=$2 PACKAGES=$3
+
+  test -e "$DEST/dev/null" || mknod "$DEST/dev/null" c 1 3
+  test -e "$DEST/dev/random" || mknod -m 0644 "$DEST/dev/random" c 1 8
+  test -e "$DEST/dev/urandom" || mknod -m 0644 "$DEST/dev/urandom" c 1 9
+
   debug "install packages: $PACKAGES"
   LC_ALL=C chroot "$DEST" /usr/bin/pacman \
     --noconfirm --arch $ARCH -Sy --force $PACKAGES
@@ -156,7 +160,7 @@ show_usage() {
   stderr "Usage: $(basename "$0") [-q] [-a i686|x86_64|arm] [-r REPO_URL] [-d DOWNLOAD_DIR] DESTDIR"
 }
 
-main() {
+main_step1() {
   # Process arguments and options
   test $# -eq 0 && set -- "-h"
   local ARCH=
@@ -174,7 +178,7 @@ main() {
     esac
   done
   shift $(($OPTIND-1))
-  test $# -eq 1 || { show_usage; return 1; }
+  test $# -eq 2 || { show_usage; return 1; }
   
   [[ -z "$ARCH" ]] && ARCH=$(uname -m)
   [[ -z "$REPO_URL" ]] &&REPO_URL=$(get_default_repo "$ARCH")
@@ -194,12 +198,23 @@ main() {
   install_pacman_packages "${BASIC_PACKAGES[*]}" "$DEST" "$LIST" "$DOWNLOAD_DIR"
   configure_pacman "$DEST" "$ARCH"
   configure_minimal_system "$DEST"
-  [[ -n "$USE_QEMU" ]] && configure_static_qemu "$ARCH" "$DEST"
-  install_packages "$ARCH" "$DEST" "${BASIC_PACKAGES[*]} ${EXTRA_PACKAGES[*]}"
-  configure_pacman "$DEST" "$ARCH" # Pacman must be re-configured
+  echo ${BASIC_PACKAGES[*]} ${EXTRA_PACKAGES[*]} > "$DEST/pkglist"
+  #[[ -n "$USE_QEMU" ]] && configure_static_qemu "$ARCH" "$DEST"
+  #install_packages "$ARCH" "$DEST" "${BASIC_PACKAGES[*]} ${EXTRA_PACKAGES[*]}"
+  #configure_pacman "$DEST" "$ARCH" # Pacman must be re-configured
   [[ "$DOWNLOAD_DIR" ]] && rm -rf "$DOWNLOAD_DIR"
   
   debug "done"
 }
 
-main "$@"
+main_step2() {
+  local DEST=$1
+  [[ -z "$ARCH" ]] && ARCH=$(uname -m)
+  [[ -n "$USE_QEMU" ]] && configure_static_qemu "$ARCH" "$DEST"
+  install_packages "$ARCH" "$DEST" "${BASIC_PACKAGES[*]} ${EXTRA_PACKAGES[*]}"
+  configure_pacman "$DEST" "$ARCH" # Pacman must be re-configured
+}
+
+[[ "$STEP" == "1" ]] && main_step1 "$@"
+[[ "$STEP" == "2" ]] && main_step2 "$@"
+exit 0
