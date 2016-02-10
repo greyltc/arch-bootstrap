@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e -u -o pipefail
 
 echo "Fixing up some details..."
 
@@ -18,16 +19,15 @@ locale-gen
 
 # clean up the pacnews
 PACNEW=/etc/pacman.conf.pacnew
-mv $PACNEW ${PACNEW%.pacnew}
+mv $PACNEW ${PACNEW%.pacnew} || True
 PACNEW=/etc/pacman.d/mirrorlist.pacnew
-mv $PACNEW ${PACNEW%.pacnew}
+mv $PACNEW ${PACNEW%.pacnew} || True
 PACNEW=/etc/shadow.pacnew
-mv $PACNEW ${PACNEW%.pacnew}
+mv $PACNEW ${PACNEW%.pacnew} || True
 PACNEW=/etc/passwd.pacnew
-mv $PACNEW ${PACNEW%.pacnew}
+mv $PACNEW ${PACNEW%.pacnew} || True
 PACNEW=/etc/resolv.conf.pacnew
-mv $PACNEW ${PACNEW%.pacnew}
+mv $PACNEW ${PACNEW%.pacnew} || True
 
 # fix TERM not being set
 echo "export TERM=xterm" >> /etc/profile
-
