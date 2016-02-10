@@ -17,6 +17,9 @@ echo "${LANGUAGE}.${TEXT_ENCODING} ${TEXT_ENCODING}" >> /etc/locale.gen
 echo LANG="${LANGUAGE}.${TEXT_ENCODING}" > /etc/locale.conf
 locale-gen
 
+# set timezone to UTC
+ln -s /usr/share/zoneinfo/UTC /etc/localtime
+
 # clean up the pacnews
 PACNEW=/etc/pacman.conf.pacnew
 mv $PACNEW ${PACNEW%.pacnew} || True
