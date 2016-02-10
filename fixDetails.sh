@@ -24,7 +24,7 @@ ln -s /usr/share/zoneinfo/UTC /etc/localtime
 PACNEW=/etc/pacman.conf.pacnew
 mv $PACNEW ${PACNEW%.pacnew} || true
 PACNEW=/etc/pacman.d/mirrorlist.pacnew
-mv $PACNEW ${PACNEW%.pacnew} || true
+#mv $PACNEW ${PACNEW%.pacnew} || true
 PACNEW=/etc/shadow.pacnew
 mv $PACNEW ${PACNEW%.pacnew} || true
 PACNEW=/etc/passwd.pacnew
