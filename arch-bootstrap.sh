@@ -27,7 +27,7 @@ PACMAN_PACKAGES=(
   keyutils krb5 libarchive libassuan libgpg-error libidn libssh2 lzo
   openssl pacman pacman-mirrorlist xz zlib
 )
-BASIC_PACKAGES=(${PACMAN_PACKAGES[*]} filesystem)
+BASIC_PACKAGES=(${PACMAN_PACKAGES[*]} filesystem dash)
 EXTRA_PACKAGES=(coreutils bash grep gawk file tar systemd sed)
 DEFAULT_REPO_URL="http://mirrors.kernel.org/archlinux"
 DEFAULT_ARM_REPO_URL="http://mirror.archlinuxarm.org"
@@ -109,6 +109,7 @@ configure_minimal_system() {
   test -e "$DEST/dev/null" || $FAKEROOT mknod "$DEST/dev/null" c 1 3
   test -e "$DEST/dev/random" || $FAKEROOT mknod -m 0644 "$DEST/dev/random" c 1 8
   test -e "$DEST/dev/urandom" || $FAKEROOT mknod -m 0644 "$DEST/dev/urandom" c 1 9
+  ln -s /usr/bin/dash "$DEST/usr/bin/sh"
   
   sed -i "s/^[[:space:]]*\(CheckSpace\)/# \1/" "$DEST/etc/pacman.conf"
   sed -i "s/^[[:space:]]*SigLevel[[:space:]]*=.*$/SigLevel = Never/" "$DEST/etc/pacman.conf"
