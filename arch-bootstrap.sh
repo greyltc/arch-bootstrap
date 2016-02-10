@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # arch-bootstrap: Bootstrap a base Arch Linux system using any GNU distribution.
 #
@@ -19,7 +19,6 @@
 #   # chroot destination
 
 set -e -u -o pipefail
-STEP=$2
 
 # to re-generate this list, under Arch run:
 # bash <(curl -L 'https://raw.githubusercontent.com/greyltc/arch-bootstrap/master/get-pacman-dependencies.sh')
@@ -105,10 +104,19 @@ configure_minimal_system() {
   touch "$DEST/etc/group"
   echo "bootstrap" > "$DEST/etc/hostname"
   
+  [[ "$EUID" -ne "0" ]] && FAKEROOT=fakeroot
   test -e "$DEST/etc/mtab" || echo "rootfs / rootfs rw 0 0" > "$DEST/etc/mtab"
+  test -e "$DEST/dev/null" || $FAKEROOT mknod "$DEST/dev/null" c 1 3
+  test -e "$DEST/dev/random" || $FAKEROOT mknod -m 0644 "$DEST/dev/random" c 1 8
+  test -e "$DEST/dev/urandom" || $FAKEROOT mknod -m 0644 "$DEST/dev/urandom" c 1 9
   
   sed -i "s/^[[:space:]]*\(CheckSpace\)/# \1/" "$DEST/etc/pacman.conf"
   sed -i "s/^[[:space:]]*SigLevel[[:space:]]*=.*$/SigLevel = Never/" "$DEST/etc/pacman.conf"
+
+  chmod 1777 "$DEST/tmp/"
+  chmod 1777 "$DEST/var/tmp/"
+  chmod 775 "$DEST/var/games/"
+  chmod 1777 "$DEST/var/spool/mail/"
 }
 
 fetch_packages_list() {
@@ -135,6 +143,13 @@ install_pacman_packages() {
   done
 }
 
+fix_details() {
+  local DEST=$1
+  cp fixDetails.sh "$DEST/usr/bin/fix-details"
+  [[ "$EUID" -ne "0" ]] && FAKEIT="fakechroot fakeroot"
+  $FAKEIT chroot "$DEST" fix-details
+}
+
 configure_static_qemu() {
   local ARCH=$1 DEST=$2
   [[ "$ARCH" == arm* ]] && ARCH=arm
@@ -146,75 +161,74 @@ configure_static_qemu() {
 
 install_packages() {
   local ARCH=$1 DEST=$2 PACKAGES=$3
-
-  test -e "$DEST/dev/null" || mknod "$DEST/dev/null" c 1 3
-  test -e "$DEST/dev/random" || mknod -m 0644 "$DEST/dev/random" c 1 8
-  test -e "$DEST/dev/urandom" || mknod -m 0644 "$DEST/dev/urandom" c 1 9
-
   debug "install packages: $PACKAGES"
-  LC_ALL=C chroot "$DEST" /usr/bin/pacman \
+  [[ "$EUID" -ne "0" ]] && FAKEIT="fakechroot fakeroot"
+  LC_ALL=C $FAKEIT chroot "$DEST" /usr/bin/pacman \
     --noconfirm --arch $ARCH -Sy --force $PACKAGES
+  LC_ALL=C $FAKEIT chroot "$DEST" pacman --noconfirm --arch $ARCH -S archlinux-keyring
 }
 
 show_usage() {
-  stderr "Usage: $(basename "$0") [-q] [-a i686|x86_64|arm] [-r REPO_URL] [-d DOWNLOAD_DIR] DESTDIR"
+  stderr "Usage: $(basename "$0") [-f] [-s STAGE] [-q] [-a i686|x86_64|arm] [-r REPO_URL] [-d DOWNLOAD_DIR] DESTDIR"
 }
 
-main_step1() {
+main() {
   # Process arguments and options
   test $# -eq 0 && set -- "-h"
   local ARCH=
   local REPO_URL=
   local USE_QEMU=
   local DOWNLOAD_DIR=
+  local FIX_DETAILS
+  local STAGE=0
   
-  while getopts "qa:r:d:h" ARG; do
+  while getopts "qa:r:d:hs:f" ARG; do
     case "$ARG" in
       a) ARCH=$OPTARG;;
       r) REPO_URL=$OPTARG;;
       q) USE_QEMU=true;;
       d) DOWNLOAD_DIR=$OPTARG;;
+      s) STAGE=$OPTARG;;
+      f) FIX_DETAILS=true;;
       *) show_usage; return 1;;
     esac
   done
   shift $(($OPTIND-1))
-  test $# -eq 2 || { show_usage; return 1; }
+  test $# -eq 1 || { show_usage; return 1; }
   
   [[ -z "$ARCH" ]] && ARCH=$(uname -m)
   [[ -z "$REPO_URL" ]] &&REPO_URL=$(get_default_repo "$ARCH")
   
   local DEST=$1
   local REPO=$(get_core_repo_url "$REPO_URL" "$ARCH")
-  [[ -z "$DOWNLOAD_DIR" ]] && DOWNLOAD_DIR=$(mktemp -d)
-  mkdir -p "$DOWNLOAD_DIR"
-  [[ "$DOWNLOAD_DIR" ]] && trap "rm -rf '$DOWNLOAD_DIR'" KILL TERM EXIT
-  debug "destination directory: $DEST"
-  debug "core repository: $REPO"
-  debug "temporary directory: $DOWNLOAD_DIR"
+  if [ "$STAGE" -eq "1" ] || [ "$STAGE" -eq "0" ] ; then
+    debug "Step 1: Creating minimal root fs"
+    [[ -z "$DOWNLOAD_DIR" ]] && DOWNLOAD_DIR=$(mktemp -d)
+    mkdir -p "$DOWNLOAD_DIR"
+    [[ "$DOWNLOAD_DIR" ]] && trap "rm -rf '$DOWNLOAD_DIR'" KILL TERM EXIT
+    debug "destination directory: $DEST"
+    debug "core repository: $REPO"
+    debug "temporary directory: $DOWNLOAD_DIR"
   
-  # Fetch packages, install system and do a minimal configuration
-  mkdir -p "$DEST"
-  local LIST=$(fetch_packages_list $REPO)
-  install_pacman_packages "${BASIC_PACKAGES[*]}" "$DEST" "$LIST" "$DOWNLOAD_DIR"
-  configure_pacman "$DEST" "$ARCH"
-  configure_minimal_system "$DEST"
-  echo ${BASIC_PACKAGES[*]} ${EXTRA_PACKAGES[*]} > "$DEST/pkglist"
-  #[[ -n "$USE_QEMU" ]] && configure_static_qemu "$ARCH" "$DEST"
-  #install_packages "$ARCH" "$DEST" "${BASIC_PACKAGES[*]} ${EXTRA_PACKAGES[*]}"
-  #configure_pacman "$DEST" "$ARCH" # Pacman must be re-configured
+    # Fetch packages, install system and do a minimal configuration
+    mkdir -p "$DEST"
+    local LIST=$(fetch_packages_list $REPO)
+    install_pacman_packages "${BASIC_PACKAGES[*]}" "$DEST" "$LIST" "$DOWNLOAD_DIR"
+    configure_pacman "$DEST" "$ARCH"
+    configure_minimal_system "$DEST"
+    [[ -n "$USE_QEMU" ]] && configure_static_qemu "$ARCH" "$DEST"
+  fi
+  if [ "$STAGE" -eq "2" ] || [ "$STAGE" -eq "0" ] ; then
+    debug "Step 2: Installing basic and extra packages"
+    install_packages "$ARCH" "$DEST" "${BASIC_PACKAGES[*]} ${EXTRA_PACKAGES[*]}"
+    configure_pacman "$DEST" "$ARCH" # Pacman must be re-configured
+    [[ -n "$FIX_DETAILS" ]] && fix_details "$DEST"
+  fi
+    
   [[ "$DOWNLOAD_DIR" ]] && rm -rf "$DOWNLOAD_DIR"
   
   debug "done"
 }
 
-main_step2() {
-  local DEST=$1
-  [[ -z "$ARCH" ]] && ARCH=$(uname -m)
-  [[ -n "$USE_QEMU" ]] && configure_static_qemu "$ARCH" "$DEST"
-  install_packages "$ARCH" "$DEST" "${BASIC_PACKAGES[*]} ${EXTRA_PACKAGES[*]}"
-  configure_pacman "$DEST" "$ARCH" # Pacman must be re-configured
-}
-
-[[ "$STEP" == "1" ]] && main_step1 "$@"
-[[ "$STEP" == "2" ]] && main_step2 "$@"
-exit 0
+main "$@"
+#exit 0
