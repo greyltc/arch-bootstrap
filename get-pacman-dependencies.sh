@@ -9,9 +9,9 @@ shared_dependencies() {
 }
 
 pkgbuild_dependencies() {
-  local PKGBUILD=$1
-  local EXCLUDE=$2
-  source "$PKGBUILD"
+  curl -LsS 'https://projects.archlinux.org/svntogit/packages.git/plain/trunk/PKGBUILD?h=packages/pacman' -o /tmp/pacman_PKGBUILD
+  local EXCLUDE=$1
+  source /tmp/pacman_PKGBUILD
   for DEPEND in ${depends[@]}; do
     echo "$DEPEND" | sed "s/[>=<].*$//"
   done | grep -v "$EXCLUDE"
@@ -20,5 +20,6 @@ pkgbuild_dependencies() {
 # Main
 { 
   shared_dependencies "/usr/bin/pacman"
-  pkgbuild_dependencies "/var/abs/core/pacman/PKGBUILD" "bash"
+  pkgbuild_dependencies "bash"
 } | sort -u | xargs
+
