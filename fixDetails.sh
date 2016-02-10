@@ -22,15 +22,15 @@ ln -s /usr/share/zoneinfo/UTC /etc/localtime
 
 # clean up the pacnews
 PACNEW=/etc/pacman.conf.pacnew
-mv $PACNEW ${PACNEW%.pacnew} || True
+mv $PACNEW ${PACNEW%.pacnew} || true
 PACNEW=/etc/pacman.d/mirrorlist.pacnew
-mv $PACNEW ${PACNEW%.pacnew} || True
+mv $PACNEW ${PACNEW%.pacnew} || true
 PACNEW=/etc/shadow.pacnew
-mv $PACNEW ${PACNEW%.pacnew} || True
+mv $PACNEW ${PACNEW%.pacnew} || true
 PACNEW=/etc/passwd.pacnew
-mv $PACNEW ${PACNEW%.pacnew} || True
+mv $PACNEW ${PACNEW%.pacnew} || true
 PACNEW=/etc/resolv.conf.pacnew
-mv $PACNEW ${PACNEW%.pacnew} || True
+mv $PACNEW ${PACNEW%.pacnew} || true
 
 # fix TERM not being set
 echo "export TERM=xterm" >> /etc/profile
