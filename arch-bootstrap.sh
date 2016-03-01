@@ -180,7 +180,7 @@ main() {
   local REPO_URL=
   local USE_QEMU=
   local DOWNLOAD_DIR=
-  local FIX_DETAILS
+  local FIX_DETAILS=false
   local STAGE=0
   
   while getopts "qa:r:d:hs:f" ARG; do
