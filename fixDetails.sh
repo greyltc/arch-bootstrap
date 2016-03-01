@@ -1,5 +1,6 @@
 #!/bin/sh
 echo "Fixing up some details..."
+set -e -u -o pipefail
 
 # reinstall the keyring since it may have failed in the chroot
 pacman --noconfirm -S archlinux-keyring
