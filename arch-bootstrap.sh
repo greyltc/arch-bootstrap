@@ -24,7 +24,7 @@ set -e -u -o pipefail
 # bash <(curl -L 'https://raw.githubusercontent.com/greyltc/arch-bootstrap/master/get-pacman-dependencies.sh')
 PACMAN_PACKAGES=(
   acl archlinux-keyring attr bzip2 curl e2fsprogs expat glibc gpgme
-  keyutils krb5 libarchive libassuan libgpg-error libidn libssh2 lzo
+  keyutils krb5 libarchive libassuan libgpg-error libidn libssh2 lz4 lzo
   openssl pacman pacman-mirrorlist xz zlib
 )
 BASIC_PACKAGES=(${PACMAN_PACKAGES[*]} filesystem dash)
