@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 echo "Fixing up some details..."
 set -e -u -o pipefail
 
@@ -20,8 +20,8 @@ locale-gen
 ln -s /usr/share/zoneinfo/UTC /etc/localtime
 
 # clean up the pacnews by overwriting the origionals
-mv /etc/pacman.conf.pacnew /etc/pacman.conf; rm /etc/pacman.conf.pacnew  || true
-mv /etc/hosts.pacnew /etc/hosts; rm /etc/hosts.pacnew || true
+#mv /etc/pacman.conf.pacnew /etc/pacman.conf; rm /etc/pacman.conf.pacnew  || true
+#mv /etc/hosts.pacnew /etc/hosts; rm /etc/hosts.pacnew || true
 mv /etc/resolv.conf.pacnew /etc/resolv.conf; rm /etc/resolv.conf.pacnew || true
 #mv /etc/pacman.d/mirrorlist.pacnew /etc/pacman.d/mirrorlist || true
 rm /etc/pacman.d/mirrorlist.pacnew || true
