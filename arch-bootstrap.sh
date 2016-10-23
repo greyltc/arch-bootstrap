@@ -140,6 +140,7 @@ install_pacman_packages() {
     debug "download package: $REPO/$FILE"
     fetch -o "$FILEPATH" "$REPO/$FILE"
     debug "uncompress package: $FILEPATH"
+    debuf "get ready to ignore a bunch of SCHILY.fflags errors!"
     uncompress "$FILEPATH" "$DEST"
   done
 }
