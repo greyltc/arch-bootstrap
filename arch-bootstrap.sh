@@ -128,6 +128,7 @@ fetch_packages_list() {
 
 install_pacman_packages() {
   local BASIC_PACKAGES=$1 DEST=$2 LIST=$3 DOWNLOAD_DIR=$4
+  debug "get ready to ignore a bunch of SCHILY.fflags errors!"
   debug "pacman package and dependencies: $BASIC_PACKAGES"
   
   for PACKAGE in $BASIC_PACKAGES; do
@@ -138,7 +139,6 @@ install_pacman_packages() {
     debug "download package: $REPO/$FILE"
     fetch -o "$FILEPATH" "$REPO/$FILE"
     debug "uncompress package: $FILEPATH"
-    debuf "get ready to ignore a bunch of SCHILY.fflags errors!"
     uncompress "$FILEPATH" "$DEST"
   done
 }
