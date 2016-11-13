@@ -23,9 +23,7 @@ set -e -u -o pipefail
 # to re-generate this list, under Arch run:
 # bash <(curl -L 'https://raw.githubusercontent.com/greyltc/arch-bootstrap/master/get-pacman-dependencies.sh')
 PACMAN_PACKAGES=(
-  acl archlinux-keyring attr bzip2 curl e2fsprogs expat glibc gpgme
-  keyutils krb5 libarchive libassuan libgpg-error libidn libssh2 lz4 lzo
-  openssl pacman pacman-mirrorlist xz zlib
+  acl archlinux-keyring attr bzip2 curl e2fsprogs expat glibc gpgme keyutils krb5 libarchive libassuan libgpg-error libssh2 lz4 lzo openssl pacman pacman-mirrorlist xz zlib
 )
 BASIC_PACKAGES=(${PACMAN_PACKAGES[*]} filesystem dash)
 EXTRA_PACKAGES=(coreutils bash grep gawk file tar systemd sed)
