@@ -103,7 +103,7 @@ configure_minimal_system() {
   echo "bootstrap" > "$DEST/etc/hostname"
   
   [[ "$EUID" -ne "0" ]] && FAKEROOT=fakeroot
-  test -e "$DEST/etc/mtab" || mv "$DEST/etc/mtab $DEST/etc/mtab.bak"; echo "rootfs / rootfs rw 0 0" > "$DEST/etc/mtab"
+  test -e "$DEST/etc/mtab" || mv "$DEST/etc/mtab" "$DEST/etc/mtab.bak"; echo "rootfs / rootfs rw 0 0" > "$DEST/etc/mtab"
   test -e "$DEST/dev/null" || $FAKEROOT mknod "$DEST/dev/null" c 1 3
   test -e "$DEST/dev/random" || $FAKEROOT mknod -m 0644 "$DEST/dev/random" c 1 8
   test -e "$DEST/dev/urandom" || $FAKEROOT mknod -m 0644 "$DEST/dev/urandom" c 1 9
