@@ -50,7 +50,7 @@ uncompress() {
   local FILEPATH=$1 DEST=$2
   
   case "$FILEPATH" in
-    *.zst) tar -I zstd xzf "$FILEPATH" -C "$DEST";;
+    *.zst) tar -I zstd -xvf "$FILEPATH" -C "$DEST";;
 # note that newer versions of tar support `tar --zstd`
     *.gz) tar xzf "$FILEPATH" -C "$DEST";;
     *.xz) xz -dc "$FILEPATH" | tar x -C "$DEST";;
