@@ -164,7 +164,7 @@ install_packages() {
   debug "install packages: $PACKAGES"
   [[ "$EUID" -ne "0" ]] && FAKEIT="fakechroot fakeroot"
   LC_ALL=C $FAKEIT chroot "$DEST" /usr/bin/pacman \
-    --noconfirm --arch $ARCH -Sy --force $PACKAGES
+    --noconfirm --arch $ARCH -Sy --overwrite \* $PACKAGES
   LC_ALL=C $FAKEIT chroot "$DEST" pacman --noconfirm --arch $ARCH -S archlinux-keyring
 }
 
